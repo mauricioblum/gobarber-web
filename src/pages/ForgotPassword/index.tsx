@@ -1,12 +1,11 @@
-import React, { useRef, useCallback } from 'react';
-import { FiLogIn, FiMail, FiLock } from 'react-icons/fi';
+import React, { useRef, useCallback, useState } from 'react';
+import { FiLogIn, FiMail } from 'react-icons/fi';
 import { FormHandles } from '@unform/core';
 import { Form } from '@unform/web';
 import * as Yup from 'yup';
-import { Link, useHistory } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import logoImg from '../../assets/logo.svg';
 
-import { useAuth } from '../../hooks/auth';
 import { useToast } from '../../hooks/toast';
 
 import { Container, Content, Background, AnimationContainer } from './styles';
@@ -14,41 +13,44 @@ import getValidationErrors from '../../utils/getValidationErrors';
 
 import Input from '../../components/Input';
 import Button from '../../components/Button';
+import api from '../../services/api';
 
-interface SignInFormData {
+interface ForgotPasswordFormData {
   email: string;
-  password: string;
 }
 
-const SignIn: React.FC = () => {
+const ForgotPassword: React.FC = () => {
+  const [loading, setLoading] = useState(false);
   const formRef = useRef<FormHandles>(null);
   const { addToast } = useToast();
 
-  const history = useHistory();
-
-  const { signIn } = useAuth();
-
   const handleSubmit = useCallback(
-    async (data: SignInFormData): Promise<void> => {
+    async (data: ForgotPasswordFormData): Promise<void> => {
       formRef.current?.setErrors({});
+      setLoading(true);
       try {
         const schema = Yup.object().shape({
           email: Yup.string()
             .required('E-mail obrigatório')
             .email('Digite um e-mail válido'),
-          password: Yup.string().required('Senha obrigatória'),
         });
 
         await schema.validate(data, {
           abortEarly: false,
         });
 
-        await signIn({
+        // rec password
+
+        await api.post('/password/forgot', {
           email: data.email,
-          password: data.password,
         });
 
-        history.push('/dashboard');
+        addToast({
+          type: 'success',
+          title: 'E-mail de recuperação de senha enviado',
+          description:
+            'Enviamos um e-mail para confirmar a recuperação de senha, confira sua caixa de entrada.',
+        });
       } catch (err) {
         if (err instanceof Yup.ValidationError) {
           const errors = getValidationErrors(err);
@@ -59,13 +61,15 @@ const SignIn: React.FC = () => {
 
         addToast({
           type: 'error',
-          title: 'Erro na autenticação',
+          title: 'Erro na recuperação de senha',
           description:
-            'Ocorreu um erro ao fazer login, confira as credenciais.',
+            'Ocorreu um erro ao tentar realizar a recuperação de senha. Tente novamente.',
         });
+      } finally {
+        setLoading(false);
       }
     },
-    [signIn, addToast, history],
+    [addToast],
   );
 
   return (
@@ -75,23 +79,18 @@ const SignIn: React.FC = () => {
           <img src={logoImg} alt="Go Barber" />
 
           <Form ref={formRef} onSubmit={handleSubmit}>
-            <h1>Faça seu logon</h1>
+            <h1>Recuperar senha</h1>
 
             <Input name="email" icon={FiMail} placeholder="Email" />
-            <Input
-              name="password"
-              icon={FiLock}
-              type="password"
-              placeholder="Senha"
-            />
 
-            <Button type="submit">Entrar</Button>
-            <Link to="/forgot-password">Esqueci minha senha</Link>
+            <Button loading={loading} type="submit">
+              Recuperar
+            </Button>
           </Form>
 
           <Link to="signup">
             <FiLogIn />
-            Criar Conta
+            Voltar ao Login
           </Link>
         </AnimationContainer>
       </Content>
@@ -100,4 +99,4 @@ const SignIn: React.FC = () => {
   );
 };
 
-export default SignIn;
+export default ForgotPassword;
