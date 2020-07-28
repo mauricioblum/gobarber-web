@@ -1,15 +1,13 @@
 import React from 'react';
 import { render, fireEvent, wait } from '@testing-library/react';
+import MockAdapter from 'axios-mock-adapter';
+import api from '../../services/api';
 import SignUp from '../../pages/SignUp';
 
 const mockedHistoryPush = jest.fn();
 const mockedAddToast = jest.fn();
 
-jest.mock('../../services/api', () => {
-  return {
-    post: jest.fn(),
-  };
-});
+const apiMock = new MockAdapter(api);
 
 jest.mock('../../hooks/toast', () => {
   return {
@@ -28,7 +26,7 @@ jest.mock('react-router-dom', () => {
   };
 });
 
-describe('SignIn Page', () => {
+describe('SignUp Page', () => {
   beforeEach(() => {
     mockedHistoryPush.mockClear();
   });
@@ -46,6 +44,14 @@ describe('SignIn Page', () => {
     fireEvent.change(passwordField, { target: { value: '123456' } });
 
     fireEvent.click(buttonElement);
+
+    const apiResponse = {
+      id: 'user123',
+      name: 'JohnDoe',
+      email: 'johndoe@example.com',
+    };
+
+    apiMock.onPost('/users').reply(200, apiResponse);
 
     await wait(() => {
       expect(mockedHistoryPush).toHaveBeenCalledWith('/');
@@ -71,24 +77,31 @@ describe('SignIn Page', () => {
     });
   });
 
-  // it('should display an Error if Sign Up fails', async () => {
-  //   const { getByPlaceholderText, getByText } = render(<SignUp />);
+  it('should display an Error if Sign Up fails', async () => {
+    const { getByPlaceholderText, getByText } = render(<SignUp />);
 
-  //   const emailField = getByPlaceholderText('Email');
-  //   const passwordField = getByPlaceholderText('Senha');
-  //   const buttonElement = getByText('Cadastrar');
+    const nameField = getByPlaceholderText('Nome');
+    const emailField = getByPlaceholderText('Email');
+    const passwordField = getByPlaceholderText('Senha');
+    const buttonElement = getByText('Cadastrar');
 
-  //   fireEvent.change(emailField, { target: { value: 'not-valid-email' } });
-  //   fireEvent.change(passwordField, { target: { value: '0' } });
+    fireEvent.change(nameField, { target: { value: 'John Doe' } });
+    fireEvent.change(emailField, { target: { value: 'johndoe@example.com' } });
+    fireEvent.change(passwordField, { target: { value: '123456' } });
 
-  //   fireEvent.click(buttonElement);
+    fireEvent.click(buttonElement);
 
-  //   await wait(() => {
-  //     expect(mockedAddToast).toHaveBeenCalledWith(
-  //       expect.objectContaining({
-  //         type: 'error',
-  //       }),
-  //     );
-  //   });
-  // });
+    apiMock.onPost('/users').reply(400, () => {
+      return new Error();
+    });
+
+    await wait(() => {
+      expect(mockedHistoryPush).not.toHaveBeenCalled();
+      expect(mockedAddToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'error',
+        }),
+      );
+    });
+  });
 });

@@ -5,7 +5,6 @@ import SignIn from '../../pages/SignIn';
 const mockedHistoryPush = jest.fn();
 const mockedSignIn = jest.fn();
 const mockedAddToast = jest.fn();
-const mockedSchema = jest.fn();
 
 jest.mock('../../hooks/toast', () => {
   return {

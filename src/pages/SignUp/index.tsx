@@ -29,7 +29,7 @@ const SignUp: React.FC = () => {
   const history = useHistory();
 
   const handleSubmit = useCallback(
-    async (data: SignUpFormData) => {
+    async (data: SignUpFormData): Promise<void> => {
       formRef.current?.setErrors({});
       try {
         const schema = Yup.object().shape({
@@ -63,7 +63,7 @@ const SignUp: React.FC = () => {
 
         addToast({
           type: 'error',
-          title: 'Erro no cadsatro',
+          title: 'Erro no cadastro',
           description:
             'Ocorreu um erro ao fazer o cadastro, tenta novamente mais tarde.',
         });
